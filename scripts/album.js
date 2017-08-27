@@ -1,7 +1,24 @@
  var setSong = function(songNumber) {
+   if (currentSoundFile) {
+        currentSoundFile.stop();
+    }
+
+
     currentlyPlayingSongNumber = parseInt(songNumber);
     currentSongFromAlbum = currentAlbum.songs[songNumber - 1];
+    currentSoundFile = new buzz.sound(currentSongFromAlbum.audioUrl, {
+      formats: [ 'mp3'],
+      preload: true
+    });
+
+    setVolume(currentVolume);
  };
+
+ var setVolume = function(volume) {
+      if (currentSoundFile) {
+          currentSoundFile.setVolume(volume);
+      }
+  };
 
  var getSongNumberCell = function(number) {
     return $('.song-item-number[data-song-number="' + number + '"]');
@@ -19,24 +36,35 @@
     var $row = $(template);
 
     var clickHandler = function() {
-	        var songNumber = parseInt($(this).attr('data-song-number'));
 
-	        if (currentlyPlayingSongNumber !== null) {
-		          // Revert to song number for currently playing song because user started playing new song.
-		          var currentlyPlayingCell = $('.song-item-number[data-song-number="' + currentlyPlayingSongNumber + '"]');
-		          currentlyPlayingCell.html(currentlyPlayingSongNumber);
-	        }
-	        if (currentlyPlayingSongNumber !== songNumber) {
-		          // Switch from Play -> Pause button to indicate new song is playing.
-		          $(this).html(pauseButtonTemplate);
-              setSong(songNumber);
-              updatePlayerBarSong();
-	        } else if (currentlyPlayingSongNumber === songNumber) {
-		          // Switch from Pause -> Play button to pause currently playing song.
-		          $(this).html(playButtonTemplate);
-              $('.main-controls .play-pause').html(playerBarPlayButton);
-              currentlyPlayingSongNumber = null;
-              currentSongFromAlbum = null;
+        var songNumber = parseInt($(this).attr('data-song-number'));
+
+        if (currentlyPlayingSongNumber !== null) {
+            // Revert to song number for currently playing song because user started playing new song.
+            var currentlyPlayingCell = getSongNumberCell(currentlyPlayingSongNumber);
+
+            currentlyPlayingCell = getSongNumberCell(currentlyPlayingSongNumber);
+            currentlyPlayingCell.html(currentlyPlayingSongNumber);
+        }
+
+         if (currentlyPlayingSongNumber !== songNumber) {
+             // Switch from Play -> Pause button to indicate new song is playing.
+             setSong(songNumber);
+            currentSoundFile.play();
+             $(this).html(pauseButtonTemplate);
+             currentSongFromAlbum = currentAlbum.songs[songNumber - 1];
+             updatePlayerBarSong();
+         } else if (currentlyPlayingSongNumber === songNumber) {
+            if (currentSoundFile.isPaused()) {
+                $(this).html(pauseButtonTemplate);
+                $('.main-controls .play-pause').html(playerBarPauseButton);
+                currentSoundFile.play();
+            } else {
+                $(this).html(playButtonTemplate);
+                $('.main-controls .play-pause').html(playerBarPlayButton);
+                currentSoundFile.pause();
+            }
+
 	        }
 };
 
@@ -107,6 +135,8 @@ var trackIndex = function(album, song) {
     // Set a new current song
     currentlyPlayingSongNumber = currentSongIndex + 1;
     currentSongFromAlbum = currentAlbum.songs[currentSongIndex];
+    setSong(currentSongIndex + 1);
+    currentSoundFile.play();
 
     // Update the Player Bar information
     updatePlayerBarSong();
@@ -133,6 +163,8 @@ var previousSong = function() {
     // Set a new current song
     currentlyPlayingSongNumber = currentSongIndex + 1;
     currentSongFromAlbum = currentAlbum.songs[currentSongIndex];
+    setSong(currentSongIndex + 1);
+    currentSoundFile.play();
 
     // Update the Player Bar information
     updatePlayerBarSong();
@@ -164,6 +196,8 @@ var playerBarPauseButton = '<span class="ion-pause"></span>';
 var currentAlbum = null;
 var currentlyPlayingSongNumber = null;
 var currentSongFromAlbum = null;
+var currentSoundFile = null;
+var currentVolume = 80;
 
 var $previousButton = $('.main-controls .previous');
 var $nextButton = $('.main-controls .next');
